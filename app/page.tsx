@@ -7,31 +7,29 @@ import { Authenticated, Unauthenticated, useMutation, useQuery } from "convex/re
 import { Content } from "next/font/google";
 import Image from "next/image";
 
+import CreateDocumentButton from "./create-document-button";
+import { DocumentCard } from "./document-card";
+
 export default function Home() {
 
   const createDocument = useMutation(api.documents.createDocument);
   const documents = useQuery(api.documents.getDocuments);
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-      <Unauthenticated>
-        <SignInButton />
-      </Unauthenticated>
-      <Authenticated>
-        <UserButton />
-        <ModeToggle/>
-        <Button onClick={()=>
-          createDocument({title:'hello world'})
-        }>Click Me</Button>
-
-        {documents?.map((doc)=>(
-          <div key = {doc._id}>{doc.title}</div>
-        ))}
-        
-      </Authenticated>
-      </main>
-      
+    
+    <main className="p-24 space-y-8">
+    <div className="flex justify-between items-center">
+      <h1 className="text-4xl font-bold">My Documents</h1>
+      <CreateDocumentButton/>
+     
     </div>
+
+    <div className="grid grid-cols-4 gap-8">
+      {documents?.map((doc)=>(<DocumentCard document ={doc}/>))}
+    </div>
+
+  </main>
+      
+  
   );
 }
