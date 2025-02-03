@@ -16,7 +16,7 @@ export function Header() {
         <Unauthenticated>
           <SignInButton />
         </Unauthenticated>
-        <Authenticated>
+        <Authenticated> 
           <div className="flex gap-4">
             <ModeToggle />
             <UserButton />
