@@ -30,17 +30,16 @@ export const getDocument = query({
       if (!userId) {
         return null;
       }
+
       const document = await ctx.db.get(args.documentId);
+      
       if (!document) {
         return null;
       }
       if (document.tokenIdentifier !== userId) {
         return null;
       }
-      return {
-        ...document,
-        documentUrl: await ctx.storage.getUrl(document.fileId),
-      };
+      return {...document,documentUrl: await ctx.storage.getUrl(document.fileId),};
     },
   })
 

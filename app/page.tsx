@@ -8,7 +8,7 @@ import { Content } from "next/font/google";
 import Image from "next/image";
 
 import UploadDocumentButton from "./upload-document-button";
-import { DocumentCard } from "./document-card";
+import { DocumentCard } from "./documents/document-card";
 
 export default function Home() {
 
