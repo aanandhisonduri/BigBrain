@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Inter as FontSans } from "next/font/google"
 import { Header } from "./header";
+import { Toaster } from "@/components/ui/toaster"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         <Providers>
           <Header/>
           {children}
+          <Toaster/>
         </Providers>
       </body>
     </html>
