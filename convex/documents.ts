@@ -1,5 +1,9 @@
-import { mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
+import { api } from "./_generated/api";
+import Groq from "groq-sdk";
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export const generateUploadUrl = mutation(async (ctx) => {
     return await ctx.storage.generateUploadUrl();
@@ -65,3 +69,48 @@ export const createDocument = mutation({
 
     },
 })
+
+
+export const askQuestion = action({
+  args: {
+    question: v.string(),
+    documentId: v.id("documents"),
+  },
+  async handler(ctx, args): Promise<string> {
+    const userId = (await ctx.auth.getUserIdentity())?.tokenIdentifier;
+    if (!userId) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    const document = await ctx.runQuery(api.documents.getDocument, {
+      documentId: args.documentId,
+    });
+
+    if (!document) {
+      throw new ConvexError("Document not found");
+    }
+
+    const file = await ctx.storage.get(document.fileId);
+    if (!file) {
+      throw new ConvexError("File not found");
+    }
+
+    const text = await file.text();
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `Given the following  text file, please help me answer the following question: ${text}`,
+        },
+        {
+          role: "user",
+          content: `Please answer this question: ${args.question}`,
+        },
+      ],
+      model: "llama-3.3-70b-versatile", // Adjust model as needed
+    });
+
+    return chatCompletion.choices[0]?.message?.content || "No response received.";
+  },
+});
