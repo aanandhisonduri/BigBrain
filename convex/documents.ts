@@ -24,6 +24,7 @@ export async function hasAccessToDocument(
   if (!userId) {
     return null;
   }
+  
 
   const document = await ctx.db.get(documentId);
 

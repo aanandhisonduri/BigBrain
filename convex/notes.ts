@@ -18,7 +18,7 @@ const groq = new Groq({
 
 export const getNote = query({
   args: {
-    noteId: v.id("notes"),
+    noteId: v.id("notes"), 
   },
   async handler(ctx, args) {
     const userId = (await ctx.auth.getUserIdentity())?.tokenIdentifier;
@@ -59,18 +59,46 @@ export const getNotes = query({
   },
 });
 
-export async function embed(text: string): Promise<number[]> {
-    const response = await groq.embeddings.create({
-      model: "llama3-8b-8192", // Ensure correct model name
-      input: text,
+
+console.log("env variables",process.env);
+
+
+const hf = new InferenceClient(process.env.HUGGINGFACE_API_KEY);  
+
+export async function embed(text: string): Promise<number[]> { 
+  try {
+    const response = await hf.featureExtraction({
+      model: "sentence-transformers/all-MiniLM-L6-v2",
+      inputs: text,
     });
-  
-    if (!response.data || !Array.isArray(response.data[0]?.embedding)) {
-      throw new Error("Invalid embedding response from Groq API");
+
+    if (!Array.isArray(response)) {
+      throw new Error("Invalid embedding response from Hugging Face API");
     }
-  
-    return response.data[0].embedding as number[]; // Type assertion
+
+    return response as number[];
+  } catch (error) {
+    console.error("Error generating embeddings:", error);
+    throw new Error("Embedding generation failed.");
   }
+}
+
+
+
+
+
+// export async function embed(text: string): Promise<number[]> {
+//     const response = await groq.embeddings.create({
+//       model: "llama3-8b-8192", // Ensure correct model name
+//       input: text,
+//     });
+  
+//     if (!response.data || !Array.isArray(response.data[0]?.embedding)) {
+//       throw new Error("Invalid embedding response from Groq API");
+//     }
+  
+//     return response.data[0].embedding as number[]; // Type assertion
+//   }
   
 
 export const setNoteEmbedding = internalMutation({
