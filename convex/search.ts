@@ -16,6 +16,8 @@ export const searchAction = action({
     }
 
     const embedding = await embed(args.search);
+    console.log("Embedding vector length:", embedding.length);
+
 
     const noteResults = await ctx.vectorSearch("notes", "by_embedding", {
       vector: embedding,
