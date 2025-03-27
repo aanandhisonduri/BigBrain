@@ -19,7 +19,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 const formSchema = z.object({
-  text: z.string().min(1).max(2500),
+  text: z.string().min(1).max(5000),
 });
 export default function CreateNoteForm({
   onNoteCreated,
