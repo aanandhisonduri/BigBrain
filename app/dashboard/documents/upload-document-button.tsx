@@ -16,11 +16,19 @@ export default function UploadDocumentButton() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
-      <DialogTrigger asChild>
+      {/* <DialogTrigger asChild>
       <Button className={btnStyles}>
       <Upload className={btnIconStyles} /> Upload Document
         </Button>
-      </DialogTrigger>
+      </DialogTrigger> */}
+      <DialogTrigger asChild>
+  <span> {/* Wrap Button inside a non-button element */}
+    <Button className={btnStyles}>
+      <Upload className={btnIconStyles} /> Upload Document
+    </Button>
+  </span>
+</DialogTrigger>
+
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Upload a Document</DialogTitle>
