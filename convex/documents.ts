@@ -12,6 +12,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import Groq from "groq-sdk";
 import { Id } from "./_generated/dataModel";
+import { embed } from "./notes";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -73,7 +74,9 @@ export const getDocument = query({
     return {
       ...accessObj.document,
       documentUrl: await ctx.storage.getUrl(accessObj.document.fileId),
+      
     };
+    
   },
 });
 
@@ -85,23 +88,35 @@ export const createDocument = mutation({
   async handler(ctx, args) {
     const userId = (await ctx.auth.getUserIdentity())?.tokenIdentifier;
     if (!userId) {
+      console.error("User is not authenticated.");
       throw new ConvexError("Not authenticated");
     }
-    const documentId = await ctx.db.insert("documents", {
-      title: args.title,
-      tokenIdentifier: userId,
-      fileId: args.fileId,
-      description: "",
-    });
 
-    await ctx.scheduler.runAfter(
-      0,
-      internal.documents.generateDocumentDescription,
-      {
+    console.log("Creating document with:", args);
+
+    try {
+      const documentId = await ctx.db.insert("documents", {
+        title: args.title,
+        tokenIdentifier: userId,
         fileId: args.fileId,
-        documentId,
-      }
-    );
+        description: "",
+      });
+
+      console.log("Document created with ID:", documentId);
+      console.log("Scheduling description generation...");
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.generateDocumentDescription,
+        {
+          fileId: args.fileId,
+          documentId,
+        }
+      );
+      console.log("Description generation scheduled.");
+    } catch (error) {
+      console.error("Error inserting document:", error);
+      throw new ConvexError("Failed to insert document");
+    }
   },
 });
 
@@ -118,31 +133,37 @@ export const generateDocumentDescription = internalAction({
     }
 
     const text = await file.text();
+    console.log("Extracted text from file:", text);
 
-    // Call Groq API for chat completion
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `Here is a text file: ${text}`,
-        },
-        {
-          role: "user",
-          content: `Please generate a 1-sentence description for this document.`,
-        },
-      ],
-      model: "llama-3.3-70b-versatile", // Use an appropriate Groq model
-    });
 
-    const response =
-      chatCompletion.choices[0]?.message?.content ??
-      "Could not generate a description for this document";
+;
+const chatCompletion = await groq.chat.completions.create({
+  messages: [
+    { role: "system", content: `Here is a text file: ${text}` },
+    { role: "user", content: "Please generate a 1-sentence description for this document." },
+  ],
+  model: "llama-3.3-70b-versatile",
+});
 
-    // Store the generated description in the database
+console.log("Received response from Groq:", JSON.stringify(chatCompletion, null, 2));
+
+    const description = chatCompletion.choices[0]?.message?.content ?? "Could not generate a description for this document";
+
+      const embedding = await embed(description);
+      
+console.log("Generated embedding:", embedding);  // <-- Add this log
+
+
+    //Store the generated description in the database
     await ctx.runMutation(internal.documents.updateDocumentDescription, {
       documentId: args.documentId,
-      description: response,
+      description: description,
+      embedding,
     });
+   
+console.log("Document updated successfully!");
+
+    
   },
 });
 
@@ -150,10 +171,12 @@ export const updateDocumentDescription = internalMutation({
   args: {
     documentId: v.id("documents"),
     description: v.string(),
+    embedding: v.array(v.float64()),
   },
   async handler(ctx, args) {
     await ctx.db.patch(args.documentId, {
       description: args.description,
+      embedding: args.embedding,
     });
   },
 });
@@ -163,6 +186,7 @@ export const askQuestion = action({
   args: {
     question: v.string(),
     documentId: v.id("documents"),
+    
   },
   async handler(ctx, args): Promise<string>
  {
